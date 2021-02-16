@@ -1,40 +1,38 @@
 module.exports = {
-  transpileDependencies: ["vuetify"],
-  pluginOptions: {
-    electronBuilder: {
-      externals: ["chokidar"],
-      outputDir: "dist",
-      removeElectronJunk: false,
-      nodeIntegration: true,
-      builderOptions: {
-        productName: "Drawer",
-        mac: {
-          darkModeSupport: true
-        },
-        dmg: {
-          artifactName: "Drawer-v${version}.${ext}",
-          title: "Drawer"
-        },
-        nsis: {
-          artifactName: "Drawer-v${version}.${ext}",
-          deleteAppDataOnUninstall: true,
-          shortcutName: "Drawer",
-          uninstallDisplayName: "Drawer"
-        }
-      }
-    }
-  },
-  devServer: {
-    https: false,
-    proxy: {
-      "^/api": {
-        target: "https://www.theparadigmdev.com",
-        changeOrigin: true,
-        ws: true,
-        cookieDomainRewrite: {
-          "*": ""
-        }
-      }
-    }
-  }
+	transpileDependencies: ['vuetify'],
+	pluginOptions: {
+		electronBuilder: {
+			externals: ['chokidar'],
+			outputDir: 'dist',
+			removeElectronJunk: false,
+			nodeIntegration: true,
+			builderOptions: {
+				productName: 'Drawer',
+				appId: 'com.theparadigmdev.drawer',
+				mac: {
+					darkModeSupport: true,
+					target: 'dmg'
+				},
+				dmg: {
+					artifactName: 'Drawer-v${version}.${ext}',
+					title: 'Drawer'
+				},
+				win: {
+					target: 'nsis'
+				},
+				nsis: {
+					artifactName: 'Drawer-v${version}.${ext}',
+					deleteAppDataOnUninstall: true,
+					shortcutName: 'Drawer',
+					uninstallDisplayName: 'Drawer'
+				},
+				linux: {
+					target: 'deb'
+				},
+				deb: {
+					artifactName: 'Drawer-v${version}.${ext}'
+				}
+			}
+		}
+	}
 };

@@ -10,8 +10,13 @@
       :color="$root.user ? '#00695C' : 'transparent'"
       class="pr-0"
     >
-      <v-fade-transition group leave-absolute>
+      <v-fade-transition
+        group
+        leave-absolute
+        style="-webkit-app-region: no-drag"
+      >
         <div
+          @contextmenu="showSettingsMenu($event)"
           key="logo"
           v-if="!$root.notify.is"
           style="display: inline-flex !important; margin-left: 2px; z-index: 10"
@@ -78,6 +83,7 @@
           key="logo"
           v-if="!$root.notify.is"
           style="display: inline-flex !important"
+          @contextmenu="showSettingsMenu($event)"
         >
           <img
             src="./assets/logo.png"
@@ -155,7 +161,7 @@
       </div>
     </v-main>
 
-    <v-main v-else style="overflow: hidden">
+    <v-main v-else style="overflow: auto; height: calc(100vh - 38px)">
       <v-container>
         <p>
           <span
@@ -165,19 +171,43 @@
             v-for="(item, index) in split_path"
             :key="index"
           >
-            {{ item }} /</span
+            / {{ item }}</span
           >
         </p>
 
-        <v-simple-table>
+        <v-simple-table
+          fixed-header
+          height="calc(100vh - 104px)"
+          style="background: transparent"
+        >
           <template v-slot:default>
             <thead>
               <tr>
-                <th class="text-left" style="width: 56px"></th>
-                <th class="text-left">Name</th>
-                <th class="text-left" style="width: 200px">Type</th>
-                <th class="text-left" style="width: 200px">Size</th>
-                <th class="text-left" style="width: 200px">Modified</th>
+                <th
+                  class="text-left"
+                  style="width: 56px; background: #1a1a1a !important"
+                ></th>
+                <th class="text-left" style="background: #1a1a1a !important">
+                  Name
+                </th>
+                <th
+                  class="text-left"
+                  style="width: 200px; background: #1a1a1a !important"
+                >
+                  Type
+                </th>
+                <th
+                  class="text-left"
+                  style="width: 200px; background: #1a1a1a !important"
+                >
+                  Size
+                </th>
+                <th
+                  class="text-left"
+                  style="width: 200px; background: #1a1a1a !important"
+                >
+                  Modified
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -186,10 +216,10 @@
                 v-for="item in current"
                 :key="item._id"
                 @contextmenu="showActionMenu($event), (action_menu_item = item)"
-                @click="!item.type ? cd(item.path) : downloadFile(item.path)"
+                @click="item.dir ? cd(item.path) : downloadFile(item)"
               >
                 <td style="width: 56px">
-                  <v-icon v-if="!item.type">mdi-folder-open</v-icon>
+                  <v-icon v-if="item.dir">mdi-folder-open</v-icon>
                   <v-icon v-else-if="item.type.includes('image')"
                     >mdi-image</v-icon
                   >
@@ -207,28 +237,39 @@
                   >
                   <v-icon v-else>mdi-file</v-icon>
                 </td>
-                <td>{{ item.name }}</td>
+                <td>
+                  {{
+                    item.dir
+                      ? item.name
+                      : $root.user.preferences.drawer.show_file_types
+                      ? item.name
+                      : item.name.substring(0, item.name.lastIndexOf("."))
+                  }}
+                </td>
                 <td style="width: 200px">
-                  {{ !item.type ? "folder" : item.type }}
+                  {{ item.dir ? "folder" : item.type }}
                 </td>
                 <td style="width: 200px">
                   {{ item.size == "0 B" ? "" : item.size }}
                 </td>
                 <td style="width: 200px">{{ item.modified }}</td>
               </tr>
+
+              <tr v-if="current.length < 1">
+                <td
+                  colspan="5"
+                  class="font-weight-light font-italic grey--text text-center"
+                >
+                  No files in this folder.
+                </td>
+              </tr>
             </tbody>
           </template>
         </v-simple-table>
-
-        <p
-          class="font-weight-light font-italic grey--text text-center mt-6"
-          v-if="current.length < 1"
-        >
-          No files in this folder.
-        </p>
       </v-container>
 
       <v-menu
+        v-if="action_menu_item"
         v-model="action_menu"
         :position-x="x"
         :position-y="y"
@@ -250,6 +291,61 @@
               ></v-list-item-icon
             >
             <v-list-item-title class="grey--text">Rename</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item
+            v-if="!action_menu_item.dir"
+            @click="getLink(action_menu_item.path)"
+          >
+            <v-list-item-icon
+              ><v-icon class="blue--text"
+                >mdi-link-variant</v-icon
+              ></v-list-item-icon
+            >
+            <v-list-item-title class="blue--text">Copy link</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+
+      <v-menu
+        v-model="settings_menu"
+        :position-x="x"
+        :position-y="y"
+        absolute
+        offset-y
+      >
+        <v-list dense>
+          <v-list-item @click="signOut()">
+            <v-list-item-avatar
+              ><v-img
+                :src="`https://www.theparadigmdev.com/relay/profile-pics/${$root.user._id}.png`"
+              ></v-img
+            ></v-list-item-avatar>
+            <v-list-item-content>
+              <v-list-item-title
+                class="font-weight-medium"
+                :style="{ color: $root.user.color }"
+                >{{ $root.user.username }}</v-list-item-title
+              >
+              <v-list-item-subtitle>Click to sign out</v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+
+          <v-list-item
+            @click="
+              ($root.user.preferences.drawer.show_file_types = !$root.user
+                .preferences.drawer.show_file_types),
+                updatePrefs()
+            "
+          >
+            <v-list-item-icon
+              ><v-icon>{{
+                $root.user.preferences.drawer.show_file_types
+                  ? "mdi-checkbox-marked"
+                  : "mdi-checkbox-blank-outline"
+              }}</v-icon></v-list-item-icon
+            >
+            <v-list-item-title>Show file extensions</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -280,8 +376,16 @@
       >
         <v-card style="text-align: center">
           <v-card-title class="text-h5 font-weight-medium"
-            >UPLOAD FILE</v-card-title
-          >
+            >UPLOAD FILE
+            <v-spacer></v-spacer>
+            <v-btn
+              color="grey darken-1"
+              @click="(files = null), (uploader = false)"
+              icon
+              class="mr-n2"
+              ><v-icon>mdi-close</v-icon></v-btn
+            >
+          </v-card-title>
 
           <v-card-text>
             <v-file-input
@@ -299,11 +403,8 @@
           </v-card-text>
 
           <v-card-actions>
-            <v-btn
-              color="grey darken-1"
-              @click="(files = null), (uploader = false)"
-              icon
-              ><v-icon>mdi-close</v-icon></v-btn
+            <v-btn color="grey" icon @click="newFolder()"
+              ><v-icon>mdi-folder-plus</v-icon></v-btn
             >
             <v-spacer></v-spacer>
             <v-btn text color="teal darken-2" @click="uploadFile()"
@@ -329,7 +430,6 @@
 <script>
 import { remote } from "electron";
 import { io } from "socket.io-client";
-import moment from "moment";
 import { shell } from "electron";
 import Store from "./store.js";
 import chokidar from "chokidar";
@@ -356,7 +456,6 @@ export default {
     ],
     files: null,
     rename: { open: false },
-    link: "",
     uploader: false,
     uploadPercentage: 0,
     uploading: false,
@@ -366,12 +465,11 @@ export default {
 
     action_menu_item: null,
     action_menu: false,
+    settings_menu: false,
     x: 0,
     y: 0,
 
-    window,
     shell,
-    console,
   }),
   computed: {
     split_path() {
@@ -419,11 +517,17 @@ export default {
               }/${encodeURIComponent(`/mnt/drawer/${this.$root.user._id}`)}`
             );
             this.current = stats.data.files;
+            if (!this.$root.user.preferences.drawer) {
+              this.$root.user.preferences.drawer = {
+                show_file_types: false,
+              };
+              this.updatePrefs();
+            }
             this.$root.socket.emit("login", this.$root.user.username);
           }
         });
 
-      chokidar.watch("/Users/aidanliddy/Desktop").on("all", (event, path) => {
+      chokidar.watch("/home/aliddy/Downloads").on("all", (event, path) => {
         console.log(event, path);
       });
     }
@@ -458,6 +562,12 @@ export default {
             this.password = "";
             store.set("jwt", response.data.jwt);
             this.$root.socket.emit("login", this.$root.user.username);
+            const stats = await this.$http.get(
+              `https://www.theparadigmdev.com/api/drawer/${
+                this.$root.user._id
+              }/${encodeURIComponent(`/mnt/drawer/${this.$root.user._id}`)}`
+            );
+            this.current = stats.data.files;
           } else {
             this.$notify(`<span class="red--text">${response.data.msg}</span>`);
           }
@@ -466,10 +576,12 @@ export default {
     },
     signOut() {
       if (this.$root.user) {
+        this.$root.socket.emit("logout", {
+          _id: this.$root.user._id,
+          username: this.$root.user.username,
+        });
         this.$http
-          .post("https://www.theparadigmdev.com/api/authentication/signout", {
-            _id: this.$root.user._id,
-          })
+          .get("https://www.theparadigmdev.com/api/authentication/signout")
           .then((response) => {
             this.$root.socket.disconnect();
             this.$root.socket = io.connect("https://www.theparadigmdev.com");
@@ -478,25 +590,41 @@ export default {
           });
       }
     },
+    updatePrefs() {
+      this.$http
+        .post("https://www.theparadigmdev.com/api/users/update", {
+          old: this.$root.user.username,
+          preferences: this.$root.user.preferences,
+        })
+        .then((response) => {
+          this.$root.user = response.data;
+        })
+        .catch((error) => console.error(error));
+    },
 
     showActionMenu(e) {
       e.preventDefault();
-      this.action_menu = false;
       this.x = e.clientX;
       this.y = e.clientY;
       this.$nextTick(() => {
         this.action_menu = true;
       });
     },
+    showSettingsMenu(e) {
+      e.preventDefault();
+      this.x = e.clientX;
+      this.y = e.clientY;
+      this.$nextTick(() => {
+        this.settings_menu = true;
+      });
+    },
 
     async cd(target) {
-      console.log(target);
       const data = await this.$http.get(
         `https://www.theparadigmdev.com/api/drawer/${
           this.$root.user._id
         }/${encodeURIComponent(target)}`
       );
-      console.log(data.data.files);
 
       if (target == this.$root.username) {
         this.current = data.data.files;
@@ -507,13 +635,30 @@ export default {
       }
     },
     resolvePath(index) {
-      console.log(index);
       let path = `/mnt/drawer/${this.$root.user._id}`;
       for (let i = 1; i <= index; i++) {
         path += `/${this.split_path[i]}`;
       }
-      console.log(path);
       return path;
+    },
+    newFolder() {
+      const path =
+        this.current_path == "/"
+          ? `/mnt/drawer/${this.$root.user._id}`
+          : this.current_path;
+      this.$http
+        .put(
+          `https://www.theparadigmdev.com/api/drawer/${
+            this.$root.user._id
+          }/${encodeURIComponent(path)}`
+        )
+        .then((response) => {
+          if (response.data.error)
+            this.$notify(
+              `<span class="red--text">${response.data.error}</span>`
+            );
+          else this.current = response.data.files;
+        });
     },
     uploadFile() {
       this.uploading = true;
@@ -526,11 +671,11 @@ export default {
         .post(
           `https://www.theparadigmdev.com/api/drawer/${
             this.$root.user._id
-          }/upload/${
-            this.current_id_path === ""
-              ? encodeURIComponent("/")
-              : encodeURIComponent(this.current_id_path)
-          }`,
+          }/${encodeURIComponent(
+            this.current_path == "/"
+              ? `/mnt/drawer/${this.$root.user._id}`
+              : this.current_path
+          )}`,
           formData,
           {
             headers: {
@@ -545,26 +690,45 @@ export default {
           }
         )
         .then((response) => {
-          this.$root.user = response.data;
           this.current = response.data.files;
           this.files = null;
           this.uploading = false;
+          this.uploader = false;
         })
         .catch((error) => {
           console.log("Upload: failed", error);
           this.files = null;
           this.uploading = false;
+          this.uploader = false;
         });
     },
-    downloadFile(path) {
-      window.open(
-        `https://www.theparadigmdev.com/api/drawer/${
-          this.$root.user._id
-        }/download/${encodeURIComponent(path)}`
-      );
+    downloadFile(item) {
+      this.$http
+        .get(
+          `https://www.theparadigmdev.com/api/drawer/${
+            this.$root.user._id
+          }/download/${encodeURIComponent(item.path)}`
+        )
+        .then((response) => {
+          remote.dialog
+            .showSaveDialog({
+              title: `Save ${item.name}`,
+              buttonLabel: "Save",
+              defaultPath: item.name,
+            })
+            .then((file) => {
+              if (!file.canceled) {
+                response.data.pipe(
+                  fs.createWriteStream(file.filePath.toString())
+                );
+              }
+            })
+            .catch((err) => {
+              console.log(err);
+            });
+        });
     },
     deleteFile(path) {
-      console.log(path);
       this.$http
         .delete(
           `https://www.theparadigmdev.com/api/drawer/${
@@ -601,7 +765,11 @@ export default {
         });
     },
     getLink(path) {
-      this.link = `https://www.theparadigmdev.com/api/drawer/${this.$root.user._id}/get/${path}`;
+      remote.clipboard.writeText(
+        `https://www.theparadigmdev.com/api/drawer/${
+          this.$root.user._id
+        }/get/${encodeURIComponent(path)}`
+      );
     },
   },
 };
@@ -611,7 +779,6 @@ export default {
 html {
   overflow: hidden !important;
 }
-
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -628,5 +795,9 @@ html {
 }
 ::-webkit-scrollbar-corner {
   background: rgb(33, 33, 33);
+}
+
+* {
+  user-select: none;
 }
 </style>
