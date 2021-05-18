@@ -151,7 +151,7 @@
               Don't have an account?
               <a
                 class="text--grey text--darken-4"
-                @click="shell.openExternal('https://www.theparadigmdev.com')"
+                @click="shell.openExternal('https://www.theparadigm.ga')"
               >
                 Create one online</a
               >
@@ -318,7 +318,7 @@
           <v-list-item @click="signOut()">
             <v-list-item-avatar
               ><v-img
-                :src="`https://www.theparadigmdev.com/relay/profile-pics/${$root.user._id}.png`"
+                :src="`https://www.theparadigm.ga/relay/profile-pics/${$root.user._id}.png`"
               ></v-img
             ></v-list-item-avatar>
             <v-list-item-content>
@@ -505,14 +505,14 @@ export default {
     if (store.get("jwt")) {
       const jwt = store.get("jwt");
       this.$http
-        .post("https://www.theparadigmdev.com/api/authentication/verify", {
+        .post("https://www.theparadigm.ga/api/authentication/verify", {
           jwt,
         })
         .then(async (response) => {
           if (response.data.valid) {
             this.$root.user = response.data.user;
             const stats = await this.$http.get(
-              `https://www.theparadigmdev.com/api/drawer/${
+              `https://www.theparadigm.ga/api/drawer/${
                 this.$root.user._id
               }/${encodeURIComponent(`/mnt/drawer/${this.$root.user._id}`)}`
             );
@@ -550,7 +550,7 @@ export default {
 
     signIn() {
       this.$http
-        .post("https://www.theparadigmdev.com/api/authentication/signin", {
+        .post("https://www.theparadigm.ga/api/authentication/signin", {
           username: this.username.toLowerCase(),
           password: this.password,
           sticky: this.sticky,
@@ -563,7 +563,7 @@ export default {
             store.set("jwt", response.data.jwt);
             this.$root.socket.emit("login", this.$root.user.username);
             const stats = await this.$http.get(
-              `https://www.theparadigmdev.com/api/drawer/${
+              `https://www.theparadigm.ga/api/drawer/${
                 this.$root.user._id
               }/${encodeURIComponent(`/mnt/drawer/${this.$root.user._id}`)}`
             );
@@ -581,10 +581,10 @@ export default {
           username: this.$root.user.username,
         });
         this.$http
-          .get("https://www.theparadigmdev.com/api/authentication/signout")
+          .get("https://www.theparadigm.ga/api/authentication/signout")
           .then((response) => {
             this.$root.socket.disconnect();
-            this.$root.socket = io.connect("https://www.theparadigmdev.com");
+            this.$root.socket = io.connect("https://www.theparadigm.ga");
             store.set("jwt", false);
             this.$root.user = false;
           });
@@ -592,7 +592,7 @@ export default {
     },
     updatePrefs() {
       this.$http
-        .post("https://www.theparadigmdev.com/api/users/update", {
+        .post("https://www.theparadigm.ga/api/users/update", {
           old: this.$root.user.username,
           preferences: this.$root.user.preferences,
         })
@@ -621,7 +621,7 @@ export default {
 
     async cd(target) {
       const data = await this.$http.get(
-        `https://www.theparadigmdev.com/api/drawer/${
+        `https://www.theparadigm.ga/api/drawer/${
           this.$root.user._id
         }/${encodeURIComponent(target)}`
       );
@@ -648,7 +648,7 @@ export default {
           : this.current_path;
       this.$http
         .put(
-          `https://www.theparadigmdev.com/api/drawer/${
+          `https://www.theparadigm.ga/api/drawer/${
             this.$root.user._id
           }/${encodeURIComponent(path)}`
         )
@@ -669,7 +669,7 @@ export default {
       }
       this.$http
         .post(
-          `https://www.theparadigmdev.com/api/drawer/${
+          `https://www.theparadigm.ga/api/drawer/${
             this.$root.user._id
           }/${encodeURIComponent(
             this.current_path == "/"
@@ -705,7 +705,7 @@ export default {
     downloadFile(item) {
       this.$http
         .get(
-          `https://www.theparadigmdev.com/api/drawer/${
+          `https://www.theparadigm.ga/api/drawer/${
             this.$root.user._id
           }/download/${encodeURIComponent(item.path)}`
         )
@@ -731,7 +731,7 @@ export default {
     deleteFile(path) {
       this.$http
         .delete(
-          `https://www.theparadigmdev.com/api/drawer/${
+          `https://www.theparadigm.ga/api/drawer/${
             this.$root.user._id
           }/${encodeURIComponent(path)}`
         )
@@ -749,7 +749,7 @@ export default {
     renameFile() {
       this.$http
         .post(
-          `https://www.theparadigmdev.com/api/drawer/${this.$root.user._id}/rename`,
+          `https://www.theparadigm.ga/api/drawer/${this.$root.user._id}/rename`,
           {
             old: this.rename.path,
             new:
@@ -766,7 +766,7 @@ export default {
     },
     getLink(path) {
       remote.clipboard.writeText(
-        `https://www.theparadigmdev.com/api/drawer/${
+        `https://www.theparadigm.ga/api/drawer/${
           this.$root.user._id
         }/get/${encodeURIComponent(path)}`
       );
